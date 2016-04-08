@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Vector;
 
 import org.ow2.proactive.scheduler.common.job.JobPriority;
+import org.ow2.proactive.scheduler.core.db.SchedulerDBManager;
 import org.ow2.proactive.scheduler.descriptor.EligibleTaskDescriptor;
 import org.ow2.proactive.scheduler.descriptor.JobDescriptor;
 
@@ -75,6 +76,21 @@ public class DefaultPolicy extends Policy {
      */
     @Override
     public Vector<EligibleTaskDescriptor> getOrderedTasks(List<JobDescriptor> jobs) {
+        Vector<EligibleTaskDescriptor> toReturn = new Vector<>();
+
+        Collections.sort(jobs, FIFO_BY_PRIORITY_COMPARATOR);
+
+        //add all sorted tasks to list of tasks
+        for (JobDescriptor jd : jobs) {
+            toReturn.addAll(jd.getEligibleTasks());
+        }
+
+        //return sorted list of tasks
+        return toReturn;
+    }
+
+    @Override
+    public Vector<EligibleTaskDescriptor> getOrderedTasksV2(List<JobDescriptor> jobs, SchedulerDBManager dbManager) {
         Vector<EligibleTaskDescriptor> toReturn = new Vector<>();
 
         Collections.sort(jobs, FIFO_BY_PRIORITY_COMPARATOR);

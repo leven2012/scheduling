@@ -43,8 +43,10 @@ import java.util.List;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
+import org.ow2.proactive.scheduler.core.db.SchedulerDBManager;
 import org.ow2.proactive.scheduler.descriptor.EligibleTaskDescriptor;
 import org.ow2.proactive.scheduler.descriptor.JobDescriptor;
+import org.ow2.proactive.scheduler.util.DependOnUtil;
 import org.ow2.proactive.scheduler.util.policy.ISO8601DateUtil;
 import org.ow2.proactive.scheduler.util.policy.ISO8601DateUtil;
 
@@ -68,6 +70,7 @@ public class ExtendedSchedulerPolicy extends DefaultPolicy {
 
     public static final String GENERIC_INFORMATION_KEY_START_AT = "START_AT";
 
+
     /*
      * Utilize 'startAt' generic info and filter any tasks that should not be scheduled for current
      * execution cycle.
@@ -80,6 +83,58 @@ public class ExtendedSchedulerPolicy extends DefaultPolicy {
         Collections.sort(jobDescList, FIFO_BY_PRIORITY_COMPARATOR);
 
         for (JobDescriptor jobDesc : jobDescList) {
+            Collection<EligibleTaskDescriptor> eligibleTasks = jobDesc.getEligibleTasks();
+            for (EligibleTaskDescriptor candidate : eligibleTasks) {
+                String startAt = getStartAtValue(jobDesc, candidate);
+                if (startAt == null) {
+                    executionCycleTasks.add(candidate);
+                } else {
+                    try {
+                        if (now.after(ISO8601DateUtil.toDate(startAt))) {
+                            executionCycleTasks.add(candidate);
+
+                        } else {
+                            if (logger.isTraceEnabled()) {
+                                logger.trace(String.format(
+                                        "Task [jobId:\"%s\", taskId:\"%s\"] is scheduled to be executed at %s." +
+                                                " It will not be scheduled for this execution cycle at %s.",
+                                        jobDesc.getJobId(), candidate.getTaskId(), startAt,
+                                        ISO8601DateUtil.parse(now)));
+                            }
+                        }
+                    } catch (IllegalArgumentException e) {
+                        logger.error(String.format(
+                                "An error occurred while processing 'startAt' generic info.%n" +
+                                        "Task ([job-id:\"%s\", task-id:\"%s\"]) will be scheduled immediately for execution.",
+                                jobDesc.getJobId().toString(), candidate.getTaskId().toString()), e);
+                        executionCycleTasks.add(candidate);
+                    }
+
+                }
+            }
+        }
+        return executionCycleTasks;
+    }
+
+    /*
+     * Utilize 'startAt' generic info and filter any tasks that should not be scheduled for current
+     * execution cycle.
+     */
+    @Override
+    public Vector<EligibleTaskDescriptor> getOrderedTasksV2(List<JobDescriptor> jobDescList, SchedulerDBManager dbManager) {
+        Date now = new Date();
+        Vector<EligibleTaskDescriptor> executionCycleTasks = new Vector<>();
+
+        Collections.sort(jobDescList, FIFO_BY_PRIORITY_COMPARATOR);
+
+        for (JobDescriptor jobDesc : jobDescList) {
+
+            //dependOn start
+            boolean dependOnOver = DependOnUtil.validateDependOn(jobDesc,dbManager);
+            if(!dependOnOver)
+                continue;
+            //dependOn end
+
             Collection<EligibleTaskDescriptor> eligibleTasks = jobDesc.getEligibleTasks();
             for (EligibleTaskDescriptor candidate : eligibleTasks) {
                 String startAt = getStartAtValue(jobDesc, candidate);
