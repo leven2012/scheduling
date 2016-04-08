@@ -1,12 +1,6 @@
 package org.ow2.proactive.scheduler.core;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -38,6 +32,8 @@ import org.ow2.proactive.scheduler.task.TaskInfoImpl;
 import org.ow2.proactive.scheduler.task.TaskLauncher;
 import org.ow2.proactive.scheduler.task.TaskResultImpl;
 import org.ow2.proactive.scheduler.task.internal.InternalTask;
+import org.ow2.proactive.scheduler.util.DateUtil;
+import org.ow2.proactive.scheduler.util.DependOnUtil;
 import org.ow2.proactive.scheduler.util.JobLogger;
 import org.ow2.proactive.scheduler.util.TaskLogger;
 import org.ow2.proactive.utils.TaskIdWrapper;
@@ -683,6 +679,21 @@ class LiveJobs {
             TaskResultImpl result, TerminationData terminationData) {
         InternalJob job = jobData.job;
         TaskId taskId = task.getId();
+
+        if (!errorOccurred){
+            if (task.getName().length()>= DependOnUtil.LOOP_END.length()
+                    &&task.getName().substring(0, DependOnUtil.LOOP_END.length()).equals(DependOnUtil.LOOP_END)){
+                Map<String,String> map =job.getVariables();
+                String loopBatch = map.get(DependOnUtil.LOOP_BATCH);
+                if (loopBatch!=null){
+                    map.put(DependOnUtil.LOOP_BATCH, DateUtil.nextDate(loopBatch));
+                    job.setVariables(map);
+                    logger.info("terminateTask loopBatch"+loopBatch+",jobData.job.getId()="+jobData.job.getId()
+                            +",jobData.job.getId()="+task.getId());
+                    dbManager.newJobEvent(job.getId().longValue(),job.getName(), loopBatch,new Date());
+                }
+            }
+        }
 
         tlogger.debug(taskId, "result added to job " + job.getId());
         //to be done before terminating the task, once terminated it is not running anymore..

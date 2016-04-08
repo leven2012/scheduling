@@ -48,6 +48,7 @@ import org.apache.log4j.Logger;
 import org.objectweb.proactive.annotation.PublicAPI;
 import org.ow2.proactive.resourcemanager.common.RMState;
 import org.ow2.proactive.scheduler.common.Scheduler;
+import org.ow2.proactive.scheduler.core.db.SchedulerDBManager;
 import org.ow2.proactive.scheduler.core.properties.PASchedulerProperties;
 import org.ow2.proactive.scheduler.descriptor.EligibleTaskDescriptor;
 import org.ow2.proactive.scheduler.descriptor.JobDescriptor;
@@ -98,6 +99,8 @@ public abstract class Policy implements Serializable {
      * @return a vector of every tasks that are ready to be schedule.
      */
     public abstract Vector<EligibleTaskDescriptor> getOrderedTasks(List<JobDescriptor> jobs);
+
+    public abstract Vector<EligibleTaskDescriptor> getOrderedTasksV2(List<JobDescriptor> jobs, SchedulerDBManager dbManager);
 
     /**
      * Set the RM state

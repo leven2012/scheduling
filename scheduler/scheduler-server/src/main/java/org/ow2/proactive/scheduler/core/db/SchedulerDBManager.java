@@ -145,6 +145,7 @@ public class SchedulerDBManager {
     public SchedulerDBManager(Configuration configuration, boolean drop) {
         try {
             configuration.addAnnotatedClass(JobData.class);
+            configuration.addAnnotatedClass(JobEventData.class);
             configuration.addAnnotatedClass(TaskData.class);
             configuration.addAnnotatedClass(TaskResultData.class);
             configuration.addAnnotatedClass(ScriptData.class);
@@ -1823,6 +1824,38 @@ public class SchedulerDBManager {
 
                 return count > 0;
             }
+        });
+    }
+
+    public void newJobEvent(final Long jobId, final String jobName, final String batch,final Date createTime){
+        runWithTransaction(new SessionWork<JobEventData>() {
+            @Override
+            public JobEventData executeWork(Session session) {
+                JobEventData jobEventData = JobEventData.createJobData(jobId,jobName,batch,createTime);
+                session.save(jobEventData);
+                return  jobEventData;
+            }
+        });
+    }
+
+    public Map<String,Long> getJobsEventNumber(final List<String> jobName,final String batch) {
+        return runWithoutTransaction(new SessionWork<Map<String,Long>>() {
+
+            @Override
+            public Map<String,Long> executeWork(Session session) {
+                Map<String,Long> map =new HashMap<String, Long>();
+                Query query = session.createQuery(
+                        "select jobName,count(jobName) from JobEventData where jobName in(:jobName) and batch = :batch group by jobName")
+                        .setParameterList("jobName", jobName).setParameter("batch",batch);
+                List<Object[]> rows = query.list();
+                for (Object[] row : rows) {
+                    String key = (String) row[0];
+                    Long value = (Long) row[1];
+                    map.put(key,value);
+                }
+                return map;
+            }
+
         });
     }
 

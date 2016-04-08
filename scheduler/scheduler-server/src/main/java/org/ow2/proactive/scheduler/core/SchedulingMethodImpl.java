@@ -167,7 +167,7 @@ public final class SchedulingMethodImpl implements SchedulingMethod {
             //ask the policy all the tasks to be schedule according to the jobs list.
             //and filter them using internal policy
             LinkedList<EligibleTaskDescriptor> taskRetrievedFromPolicy = internalPolicy.filter(currentPolicy
-                    .getOrderedTasks(descriptors));
+                    .getOrderedTasksV2(descriptors,schedulingService.getInfrastructure().getDBManager()));
 
             //if there is no task to scheduled, return
             if (taskRetrievedFromPolicy == null || taskRetrievedFromPolicy.size() == 0) {
