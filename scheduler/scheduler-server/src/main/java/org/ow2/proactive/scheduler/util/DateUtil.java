@@ -44,5 +44,4 @@ public class DateUtil {
         String str=sdf.format(date);
         return str;
     }
-
 }
