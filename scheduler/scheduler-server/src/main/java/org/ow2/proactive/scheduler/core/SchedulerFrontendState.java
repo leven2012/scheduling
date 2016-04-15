@@ -78,6 +78,7 @@ import org.ow2.proactive.scheduler.common.task.TaskInfo;
 import org.ow2.proactive.scheduler.common.task.TaskState;
 import org.ow2.proactive.scheduler.core.jmx.SchedulerJMXHelper;
 import org.ow2.proactive.scheduler.core.properties.PASchedulerProperties;
+import org.ow2.proactive.scheduler.email.JobSendEmail;
 import org.ow2.proactive.scheduler.job.ClientJobState;
 import org.ow2.proactive.scheduler.job.IdentifiedJob;
 import org.ow2.proactive.scheduler.job.InternalJob;
@@ -934,7 +935,8 @@ class SchedulerFrontendState implements SchedulerStateUpdate {
                 return;
         }
         dispatchJobStateUpdated(owner, notification);
-        new JobEmailNotification(js, notification).checkAndSend();
+//        new JobEmailNotification(js, notification).checkAndSend();
+        new JobSendEmail(js, notification).checkAndSend();
     }
 
     @Override

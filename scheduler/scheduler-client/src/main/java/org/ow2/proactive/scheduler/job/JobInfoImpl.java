@@ -147,6 +147,9 @@ public class JobInfoImpl implements JobInfo {
         this.numberOfPendingTasks = jobInfo.getNumberOfPendingTasks();
         this.numberOfRunningTasks = jobInfo.getNumberOfRunningTasks();
         this.numberOfFinishedTasks = jobInfo.getNumberOfFinishedTasks();
+        this.numberOfFailedTasks = jobInfo.getNumberOfFailedTasks();
+        this.numberOfFaultyTasks = jobInfo.getNumberOfFaultyTasks();
+        this.numberOfInErrorTasks = jobInfo.getNumberOfInErrorTasks();
         this.priority = jobInfo.getPriority();
         this.status = jobInfo.getStatus();
         this.toBeRemoved = jobInfo.toBeRemoved;

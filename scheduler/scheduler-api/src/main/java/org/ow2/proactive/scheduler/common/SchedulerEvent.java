@@ -55,6 +55,7 @@ public enum SchedulerEvent {
 
     // WARNING: New State must be added at the end of the existing one in order to keep associated ordinal number.
 
+    JOB_LOOP_FINISHED("Job loop finished"),
     /** The scheduler has just been frozen, this pause will stop every process except the running one. */
     FROZEN("Frozen"),
     /** The scheduler has just been resumed. */

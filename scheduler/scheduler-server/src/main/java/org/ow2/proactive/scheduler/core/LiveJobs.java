@@ -24,6 +24,7 @@ import org.ow2.proactive.scheduler.common.task.TaskStatus;
 import org.ow2.proactive.scheduler.core.db.SchedulerDBManager;
 import org.ow2.proactive.scheduler.descriptor.EligibleTaskDescriptor;
 import org.ow2.proactive.scheduler.descriptor.JobDescriptor;
+import org.ow2.proactive.scheduler.email.JobSendEmail;
 import org.ow2.proactive.scheduler.job.ChangedTasksInfo;
 import org.ow2.proactive.scheduler.job.ClientJobState;
 import org.ow2.proactive.scheduler.job.InternalJob;
@@ -679,7 +680,7 @@ class LiveJobs {
             TaskResultImpl result, TerminationData terminationData) {
         InternalJob job = jobData.job;
         TaskId taskId = task.getId();
-
+        boolean loopSendEmail =false;
         if (!errorOccurred){
             if (task.getName().length()>= DependOnUtil.LOOP_END.length()
                     &&task.getName().substring(0, DependOnUtil.LOOP_END.length()).equals(DependOnUtil.LOOP_END)){
@@ -691,8 +692,10 @@ class LiveJobs {
                     logger.info("terminateTask loopBatch"+loopBatch+",jobData.job.getId()="+jobData.job.getId()
                             +",jobData.job.getId()="+task.getId());
                     dbManager.newJobEvent(job.getId().longValue(),job.getName(), loopBatch,new Date());
+                    loopSendEmail = true;
                 }
             }
+
         }
 
         tlogger.debug(taskId, "result added to job " + job.getId());
@@ -726,10 +729,17 @@ class LiveJobs {
         //if this job is finished (every task have finished)
         jlogger.info(job.getId(), "finished tasks " + job.getNumberOfFinishedTasks() + ", total tasks " +
                 job.getTotalNumberOfTasks() + ", finished " + jobFinished);
+
         if (jobFinished) {
             //send event to client
             listener.jobStateUpdated(job.getOwner(), new NotificationData<JobInfo>(
                     SchedulerEvent.JOB_RUNNING_TO_FINISHED, new JobInfoImpl((JobInfoImpl) job.getJobInfo())));
+            loopSendEmail = false;
+        }
+
+        if(loopSendEmail){
+            new JobSendEmail(job, new NotificationData<JobInfo>(
+                    SchedulerEvent.JOB_LOOP_FINISHED, new JobInfoImpl((JobInfoImpl) job.getJobInfo()))).checkAndSend();
         }
     }
 
