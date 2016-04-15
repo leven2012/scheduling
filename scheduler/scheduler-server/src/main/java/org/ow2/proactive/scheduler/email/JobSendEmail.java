@@ -14,7 +14,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Enumeration;
 import java.util.Properties;
 
 /**
@@ -105,16 +108,9 @@ public class JobSendEmail {
     }
 
     private String getUrl(){
-        StringBuilder taskIds = new StringBuilder();
-        String hostname = null,jobId=null;
-        try {
-            hostname = InetAddress.getLocalHost().getCanonicalHostName();
-        } catch (UnknownHostException e) {
-            logger.debug("Could not get hostname", e);
-        }
-        jobId =jobState.getId().toString();
+        String jobId = jobState.getId().toString();
         Properties properties = readRestProperties();
-        return String.format(LOGGER_URL, hostname, properties.getProperty("web.port", "8080"), jobId);
+        return String.format(LOGGER_URL, getIpConfig(), properties.getProperty("web.port", "8080"), jobId);
     }
 
     private static Properties readRestProperties() {
@@ -135,5 +131,23 @@ public class JobSendEmail {
         } else {
             return ".";
         }
+    }
+
+    private static String getIpConfig() {
+        StringBuilder ipConfig = new StringBuilder();
+        try {
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
+                NetworkInterface intf = en.nextElement();
+                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
+                    InetAddress inetAddress = enumIpAddr.nextElement();
+                    if (!inetAddress.isLoopbackAddress() && !inetAddress.isLinkLocalAddress() && inetAddress.isSiteLocalAddress()) {
+                        ipConfig.append(inetAddress.getHostAddress().toString() + "\n");
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            logger.warn("Could not getIpConfig" + e);
+        }
+        return ipConfig.toString();
     }
 }
