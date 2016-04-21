@@ -1,26 +1,14 @@
 package org.ow2.proactive.scheduler.core;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
-
+import org.apache.log4j.Logger;
 import org.ow2.proactive.scheduler.common.NotificationData;
 import org.ow2.proactive.scheduler.common.SchedulerEvent;
-import org.ow2.proactive.scheduler.common.exception.TaskAbortedException;
-import org.ow2.proactive.scheduler.common.exception.TaskPreemptedException;
-import org.ow2.proactive.scheduler.common.exception.TaskRestartedException;
-import org.ow2.proactive.scheduler.common.exception.UnknownJobException;
-import org.ow2.proactive.scheduler.common.exception.UnknownTaskException;
+import org.ow2.proactive.scheduler.common.exception.*;
 import org.ow2.proactive.scheduler.common.job.JobId;
 import org.ow2.proactive.scheduler.common.job.JobInfo;
 import org.ow2.proactive.scheduler.common.job.JobPriority;
 import org.ow2.proactive.scheduler.common.job.JobStatus;
-import org.ow2.proactive.scheduler.common.task.RestartMode;
-import org.ow2.proactive.scheduler.common.task.SimpleTaskLogs;
-import org.ow2.proactive.scheduler.common.task.TaskId;
-import org.ow2.proactive.scheduler.common.task.TaskInfo;
-import org.ow2.proactive.scheduler.common.task.TaskState;
-import org.ow2.proactive.scheduler.common.task.TaskStatus;
+import org.ow2.proactive.scheduler.common.task.*;
 import org.ow2.proactive.scheduler.core.db.SchedulerDBManager;
 import org.ow2.proactive.scheduler.descriptor.EligibleTaskDescriptor;
 import org.ow2.proactive.scheduler.descriptor.JobDescriptor;
@@ -38,7 +26,10 @@ import org.ow2.proactive.scheduler.util.DependOnUtil;
 import org.ow2.proactive.scheduler.util.JobLogger;
 import org.ow2.proactive.scheduler.util.TaskLogger;
 import org.ow2.proactive.utils.TaskIdWrapper;
-import org.apache.log4j.Logger;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 class LiveJobs {
@@ -680,22 +671,42 @@ class LiveJobs {
             TaskResultImpl result, TerminationData terminationData) {
         InternalJob job = jobData.job;
         TaskId taskId = task.getId();
+
         boolean loopSendEmail =false;
         if (!errorOccurred){
-            if (task.getName().length()>= DependOnUtil.LOOP_END.length()
-                    &&task.getName().substring(0, DependOnUtil.LOOP_END.length()).equals(DependOnUtil.LOOP_END)){
-                Map<String,String> map =job.getVariables();
-                String loopBatch = map.get(DependOnUtil.LOOP_BATCH);
-                if (loopBatch!=null){
-                    map.put(DependOnUtil.LOOP_BATCH, DateUtil.nextDate(loopBatch));
-                    job.setVariables(map);
-                    logger.info("terminateTask loopBatch"+loopBatch+",jobData.job.getId()="+jobData.job.getId()
-                            +",jobData.job.getId()="+task.getId());
-                    dbManager.newJobEvent(job.getId().longValue(),job.getName(), loopBatch,new Date());
-                    loopSendEmail = true;
-                }
-            }
+            if (task.getName().startsWith(DependOnUtil.LOOP_END)){
 
+                Map<String,String> variableMap =job.getVariables();
+                String loopBatch = variableMap.get(DependOnUtil.LOOP_BATCH);
+                if (loopBatch==null){
+                    loopBatch = DateUtil.getCurrentDay(); //默认本次循环结束当天为该批次
+                }
+                String loopDate = variableMap.get(DependOnUtil.LOOP_DATE);
+                if (loopDate==null){
+                    loopDate = "1";  //默认T+1天循环
+                }
+                logger.info("terminateTask jobId="+jobData.job.getId()+",+taskId="
+                        +task.getId()+",loopBatch="+loopBatch+",loopDate="+loopDate);
+                variableMap.put(DependOnUtil.LOOP_BATCH, DateUtil.addDate(loopBatch,Integer.valueOf(loopDate)));
+                job.setVariables(variableMap);
+                dbManager.newJobEvent(job.getId().longValue(),job.getName(), loopBatch,new Date());
+
+                Map<String,String> genericMap = job.getGenericInformation();
+                String thirdName = genericMap.get(DependOnUtil.THIRD_NAME);
+                String thirdPath = genericMap.get(DependOnUtil.THIRD_PATH);
+                String thirdIp = genericMap.get(DependOnUtil.THIRD_IP);
+                String fileName = genericMap.get(DependOnUtil.THIRD_FILE_NAME);
+                logger.info("terminateTask jobId="+jobData.job.getId()+",+taskId="+task.getId()
+                        +",thirdName="+thirdName+",thirdPath="+thirdPath+",fileName="+fileName);
+
+                if(thirdName!=null && thirdPath!=null && fileName!=null) {
+                    dbManager.newJobThird(job.getId().longValue(),job.getName(),thirdIp,thirdName,thirdPath,fileName,new Date());
+                    genericMap.remove(DependOnUtil.THIRD_FILE_NAME);
+                    job.setGenericInformations(genericMap);
+                }
+
+                loopSendEmail = true;
+            }
         }
 
         tlogger.debug(taskId, "result added to job " + job.getId());

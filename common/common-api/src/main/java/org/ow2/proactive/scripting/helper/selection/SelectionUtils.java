@@ -36,23 +36,18 @@
  */
 package org.ow2.proactive.scripting.helper.selection;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import org.apache.log4j.Logger;
+import org.objectweb.proactive.annotation.PublicAPI;
+
+import java.io.*;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.Properties;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-
-import org.objectweb.proactive.annotation.PublicAPI;
 
 
 /**
@@ -65,6 +60,8 @@ import org.objectweb.proactive.annotation.PublicAPI;
  */
 @PublicAPI
 public class SelectionUtils {
+
+    private static final Logger logger = Logger.getLogger(SelectionUtils.class);
 
     /** Less than operator */
     public static final int LESS_THAN = 1;
@@ -481,6 +478,43 @@ public class SelectionUtils {
      */
     public static boolean checkFreeSpaceDiskAvailableForTmpDir(Long space) {
         return checkFreeSpaceDiskAvailable(space, System.getProperty("java.io.tmpdir"));
+    }
+
+    /**
+     * Check if the given file path exist or not.
+     *
+     * @param path the file path to check
+     * @return true if the given file path exists
+     */
+    public static boolean checkBeginStart(String network,String jobName,String thirdName,String path) {
+        boolean checkBeginStart = false;
+        System.out.println("checkBeginStart network="+network+",jobName="+jobName+",thirdName="+thirdName+",path="+path);
+        if(checkIp(network)){
+            System.out.println("checkBeginStart hostName true");
+           /* SchedulerDBManager dbManager=SchedulerDBManager.createUsingProperties();
+            List<String> dbFileNames = dbManager.getJobThirds(jobName,thirdName);*/
+            List<String> dbFileNames = new ArrayList<String>();
+            System.out.println("checkBeginStart dbFileNames = "+dbFileNames.size());
+            File file = new File(path);
+            String[] files = file.list();
+            List<String> fileNames = Arrays.asList(files);
+            System.out.println("checkBeginStart fileNames = "+fileNames.size());
+            if (fileNames!=null&&dbFileNames!=null){
+                fileNames.removeAll(dbFileNames);
+            }
+
+            if (fileNames!=null&&fileNames.size()>0){
+                checkBeginStart = true;
+                System.out.println("checkBeginStart checkBeginStart true");
+            }
+        }
+
+        return  checkBeginStart;
+    }
+
+    public static void main(String[] args){
+        System.out.println("test");
+        checkHostName("10.100.65.98");
     }
 
 }

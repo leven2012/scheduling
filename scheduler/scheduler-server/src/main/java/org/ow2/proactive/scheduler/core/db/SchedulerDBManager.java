@@ -146,6 +146,7 @@ public class SchedulerDBManager {
         try {
             configuration.addAnnotatedClass(JobData.class);
             configuration.addAnnotatedClass(JobEventData.class);
+            configuration.addAnnotatedClass(JobThirdData.class);
             configuration.addAnnotatedClass(TaskData.class);
             configuration.addAnnotatedClass(TaskResultData.class);
             configuration.addAnnotatedClass(ScriptData.class);
@@ -1854,6 +1855,34 @@ public class SchedulerDBManager {
                     map.put(key,value);
                 }
                 return map;
+            }
+
+        });
+    }
+
+    public void newJobThird(final Long jobId, final String jobName, final String thirdIp, final String thirdName,
+                            final String thirdPath, final String fileName, final Date createTime){
+        runWithTransaction(new SessionWork<JobThirdData>() {
+            @Override
+            public JobThirdData executeWork(Session session) {
+                JobThirdData jobThirdData = JobThirdData.createJobThirdData(jobId,jobName,thirdIp,thirdName,thirdPath,fileName,createTime);
+                session.save(jobThirdData);
+                return  jobThirdData;
+            }
+        });
+    }
+
+    public List<String> getJobThirds(final String jobName,final String thirdName) {
+        return runWithoutTransaction(new SessionWork<List<String>>() {
+
+            @Override
+            public List<String> executeWork(Session session) {
+                Map<String,Long> map =new HashMap<String, Long>();
+                Query query = session.createQuery(
+                        "select fileName from JobThirdData where jobName = :jobName and thirdName = :thirdName")
+                        .setParameter("jobName", jobName).setParameter("thirdName",thirdName);
+                List<String> fileNames = query.list();
+                return fileNames;
             }
 
         });
