@@ -480,41 +480,4 @@ public class SelectionUtils {
         return checkFreeSpaceDiskAvailable(space, System.getProperty("java.io.tmpdir"));
     }
 
-    /**
-     * Check if the given file path exist or not.
-     *
-     * @param path the file path to check
-     * @return true if the given file path exists
-     */
-    public static boolean checkBeginStart(String network,String jobName,String thirdName,String path) {
-        boolean checkBeginStart = false;
-        System.out.println("checkBeginStart network="+network+",jobName="+jobName+",thirdName="+thirdName+",path="+path);
-        if(checkIp(network)){
-            System.out.println("checkBeginStart hostName true");
-           /* SchedulerDBManager dbManager=SchedulerDBManager.createUsingProperties();
-            List<String> dbFileNames = dbManager.getJobThirds(jobName,thirdName);*/
-            List<String> dbFileNames = new ArrayList<String>();
-            System.out.println("checkBeginStart dbFileNames = "+dbFileNames.size());
-            File file = new File(path);
-            String[] files = file.list();
-            List<String> fileNames = Arrays.asList(files);
-            System.out.println("checkBeginStart fileNames = "+fileNames.size());
-            if (fileNames!=null&&dbFileNames!=null){
-                fileNames.removeAll(dbFileNames);
-            }
-
-            if (fileNames!=null&&fileNames.size()>0){
-                checkBeginStart = true;
-                System.out.println("checkBeginStart checkBeginStart true");
-            }
-        }
-
-        return  checkBeginStart;
-    }
-
-    public static void main(String[] args){
-        System.out.println("test");
-        checkHostName("10.100.65.98");
-    }
-
 }
