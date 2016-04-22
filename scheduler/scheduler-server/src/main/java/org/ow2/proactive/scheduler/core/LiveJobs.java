@@ -10,6 +10,7 @@ import org.ow2.proactive.scheduler.common.job.JobPriority;
 import org.ow2.proactive.scheduler.common.job.JobStatus;
 import org.ow2.proactive.scheduler.common.task.*;
 import org.ow2.proactive.scheduler.core.db.SchedulerDBManager;
+import org.ow2.proactive.scheduler.core.properties.PASchedulerProperties;
 import org.ow2.proactive.scheduler.descriptor.EligibleTaskDescriptor;
 import org.ow2.proactive.scheduler.descriptor.JobDescriptor;
 import org.ow2.proactive.scheduler.email.JobSendEmail;
@@ -17,6 +18,8 @@ import org.ow2.proactive.scheduler.job.ChangedTasksInfo;
 import org.ow2.proactive.scheduler.job.ClientJobState;
 import org.ow2.proactive.scheduler.job.InternalJob;
 import org.ow2.proactive.scheduler.job.JobInfoImpl;
+import org.ow2.proactive.scheduler.sms.SendSms;
+import org.ow2.proactive.scheduler.sms.Sms;
 import org.ow2.proactive.scheduler.task.TaskInfoImpl;
 import org.ow2.proactive.scheduler.task.TaskLauncher;
 import org.ow2.proactive.scheduler.task.TaskResultImpl;
@@ -26,6 +29,7 @@ import org.ow2.proactive.scheduler.util.DependOnUtil;
 import org.ow2.proactive.scheduler.util.JobLogger;
 import org.ow2.proactive.scheduler.util.TaskLogger;
 import org.ow2.proactive.utils.TaskIdWrapper;
+import org.python.antlr.ast.Str;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -468,7 +472,7 @@ class LiveJobs {
                             JobStatus.CANCELED);
 
                     logger.info("Job has been canceled");
-
+                    Sms.initSms(jobData.job,task);
                     return terminationData;
                 } else if (numberOfExecutionLeft > 0) {
                     logger.info("Number of execution left is " + numberOfExecutionLeft);
@@ -477,14 +481,14 @@ class LiveJobs {
                         suspendTaskOnError(jobData, task, result.getTaskDuration());
 
                         logger.info("Task is paused on error");
-
+                        Sms.initSms(jobData.job,task);
                         return terminationData;
                     } else if (requiresPauseJobOnError) {
                         suspendTaskOnError(jobData, task, result.getTaskDuration());
                         pauseJob(task.getJobId());
 
                         logger.info("Job is paused on error");
-
+                        Sms.initSms(jobData.job,task);
                         return terminationData;
                     } else {
                         jobData.job.increaseNumberOfFaultyTasks(taskId);
@@ -504,6 +508,7 @@ class LiveJobs {
                     if (requiresPauseJobOnError) {
                         pauseJob(task.getJobId());
                     }
+                    Sms.initSms(jobData.job,task);
                 }
             }
 
@@ -673,10 +678,12 @@ class LiveJobs {
         TaskId taskId = task.getId();
 
         boolean loopSendEmail =false;
+
+        Map<String,String> genericMap = job.getGenericInformation();
+        Map<String,String> variableMap =job.getVariables();
         if (!errorOccurred){
             if (task.getName().startsWith(DependOnUtil.LOOP_END)){
 
-                Map<String,String> variableMap =job.getVariables();
                 String loopBatch = variableMap.get(DependOnUtil.LOOP_BATCH);
                 if (loopBatch==null){
                     loopBatch = DateUtil.getCurrentDay(); //默认本次循环结束当天为该批次
@@ -691,7 +698,6 @@ class LiveJobs {
                 job.setVariables(variableMap);
                 dbManager.newJobEvent(job.getId().longValue(),job.getName(), loopBatch,new Date());
 
-                Map<String,String> genericMap = job.getGenericInformation();
                 String thirdName = genericMap.get(DependOnUtil.THIRD_NAME);
                 String thirdPath = genericMap.get(DependOnUtil.THIRD_PATH);
                 String thirdIp = genericMap.get(DependOnUtil.THIRD_IP);

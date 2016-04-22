@@ -62,6 +62,11 @@ import org.ow2.proactive.utils.PAPropertiesLazyLoader;
 @PublicAPI
 public enum PASchedulerProperties {
 
+    /**
+     * 短信服务SH文件地址
+     */
+    SCHEDULER_SMS_PATH("pa.scheduler.sms.path", PropertyType.STRING),
+
     /* ***************************************************************** */
     /* ********************** SCHEDULER PROPERTIES ********************* */
     /* ***************************************************************** */

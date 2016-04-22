@@ -50,4 +50,10 @@ public class DateUtil {
         String str=sdf.format(new Date());
         return str;
     }
+
+    public static final String getCurrentDay(String format){
+        SimpleDateFormat sdf=new SimpleDateFormat(format);
+        String str=sdf.format(new Date());
+        return str;
+    }
 }
